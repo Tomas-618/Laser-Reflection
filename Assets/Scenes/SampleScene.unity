@@ -152,7 +152,7 @@ MonoBehaviour:
   _lineLength: 20
   _maxReflectionsCount: 3
   _lineRenderer: {fileID: 1632607517}
-  _mask:
+  _layerMask:
     serializedVersion: 2
     m_Bits: 4294967295
 --- !u!4 &272133854
@@ -838,7 +838,7 @@ MonoBehaviour:
   _lineLength: 20
   _maxReflectionsCount: 3
   _lineRenderer: {fileID: 1501489814}
-  _mask:
+  _layerMask:
     serializedVersion: 2
     m_Bits: 55
 --- !u!135 &1091925039

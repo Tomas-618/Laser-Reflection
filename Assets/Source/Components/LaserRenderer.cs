@@ -30,7 +30,9 @@ namespace Source.Components
         public void Clear()
         {
             StopCoroutine();
-            _lineRenderer.positionCount = 0;
+
+            if (_lineRenderer)
+                _lineRenderer.positionCount = 0;
         }
 
         private IEnumerator BuildLinePath(Action<Transform[]> callback)
