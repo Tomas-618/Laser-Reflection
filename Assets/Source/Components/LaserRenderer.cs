@@ -13,7 +13,7 @@ namespace Source.Components
         [SerializeField, Min(0)] private int _maxReflectionsCount;
 
         [SerializeField] private LineRenderer _lineRenderer;
-        [SerializeField] private LayerMask _mask;
+        [SerializeField] private LayerMask _layerMask;
 
         private Transform _transform;
         private Coroutine _coroutine;
@@ -47,11 +47,11 @@ namespace Source.Components
             bool isStopped = false;
 
             while (isStopped == false &&
-                   Physics.Raycast(ray, out var hit, _lineLength, _mask.value))
+                   Physics.Raycast(ray, out var hit, _lineLength, _layerMask.value))
             {
                 SetNextRenderPoint(vertices, ref ray, hit);
 
-                if (CheckStopping(hit, ++reflectionsCount, out var reflector))
+                if (ShouldStop(hit, ++reflectionsCount, out var reflector))
                 {
                     isStopped = true;
 
@@ -80,7 +80,7 @@ namespace Source.Components
             _coroutine = null;
         }
 
-        private bool CheckStopping(RaycastHit hit, int reflectionsCount, out Reflector reflector)
+        private bool ShouldStop(RaycastHit hit, int reflectionsCount, out Reflector reflector)
         {
             reflector = null;
 
