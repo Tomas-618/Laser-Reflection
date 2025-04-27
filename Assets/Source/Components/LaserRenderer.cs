@@ -37,7 +37,9 @@ namespace Source.Components
 
         private IEnumerator BuildLinePath(Action<Transform[]> callback)
         {
-            var vertices = new List<LaserVertex>(_maxReflectionsCount)
+            int extraPointsCount = 2;
+
+            var vertices = new List<LaserVertex>(_maxReflectionsCount + extraPointsCount)
             {
                 new(Vector3.zero, _transform)
             };
@@ -65,29 +67,23 @@ namespace Source.Components
                 yield return null;
             }
 
-            RenderPath(vertices, isStopped, ray);
+            AddExtraVertex(vertices, ray, isStopped);
+            RenderPath(vertices);
 
             _coroutine = null;
             callback?.Invoke(vertices
                 .Select(vertex => vertex.Connection)
+                .Where(connection => connection)
                 .ToArray());
         }
 
-        private void StopCoroutine()
+        private void AddExtraVertex(List<LaserVertex> vertices, Ray ray, bool isStopped)
         {
-            if (_coroutine == null)
+            if (isStopped)
                 return;
 
-            StopCoroutine(_coroutine);
-            _coroutine = null;
-        }
-
-        private bool ShouldStop(RaycastHit hit, int reflectionsCount, out Reflector reflector)
-        {
-            reflector = null;
-
-            return reflectionsCount > _maxReflectionsCount ||
-                   hit.collider.TryGetComponent(out reflector) == false;
+            vertices.Add(new LaserVertex(_transform.InverseTransformPoint
+                (ray.GetPoint(_lineLength))));
         }
 
         private void SetNextRenderPoint(List<LaserVertex> vertices, ref Ray ray, RaycastHit hit)
@@ -98,24 +94,29 @@ namespace Source.Components
             vertices.Add(new LaserVertex(localHitPoint, hit.transform));
         }
 
-        private void RenderPath(List<LaserVertex> vertices, bool isStopped, Ray ray)
+        private bool ShouldStop(RaycastHit hit, int reflectionsCount, out Reflector reflector)
+        {
+            reflector = null;
+
+            return reflectionsCount > _maxReflectionsCount ||
+                   hit.collider.TryGetComponent(out reflector) == false;
+        }
+
+        private void RenderPath(List<LaserVertex> vertices)
         {
             _lineRenderer.positionCount = vertices.Count;
 
             for (int i = 0; i < vertices.Count; i++)
                 _lineRenderer.SetPosition(i, vertices[i].Position);
-
-            RenderExtraPoint(vertices.Count, isStopped, ray);
         }
 
-        private void RenderExtraPoint(int verticesCount, bool isStopped, Ray ray)
+        private void StopCoroutine()
         {
-            if (isStopped)
+            if (_coroutine == null)
                 return;
 
-            ++_lineRenderer.positionCount;
-            _lineRenderer.SetPosition(verticesCount, _transform.InverseTransformPoint
-                (ray.GetPoint(_lineLength)));
+            StopCoroutine(_coroutine);
+            _coroutine = null;
         }
     }
 }
