@@ -1,14 +1,12 @@
-using System.Collections;
 using System.Collections.Generic;
 using Source.Components.Contracts;
-using Source.Data;
 using UnityEngine;
 
 namespace Source.Components
 {
     public class LaserRenderer : MonoBehaviour
     {
-        private readonly List<LaserVertex> _vertices = new();
+        private readonly List<Vector3> _vertices = new();
         private readonly HashSet<IRefractor> _refractors = new();
 
         [SerializeField, Min(0f)] private float _lineLength;
@@ -19,39 +17,30 @@ namespace Source.Components
         [SerializeField] private LayerMask _layerMask;
 
         private Transform _transform;
-        private Coroutine _coroutine;
 
-        private void OnValidate()
-        {
+        private void OnValidate() =>
             _verticesCapacity = Mathf.Clamp(_verticesCapacity, _maxReflectionsCount, int.MaxValue);
-            _refractors.EnsureCapacity(_verticesCapacity);
-        }
 
         private void Awake()
         {
             _transform = transform;
             _vertices.Capacity = _verticesCapacity;
+            _refractors.EnsureCapacity(_verticesCapacity);
         }
 
-        private void OnDisable() =>
-            Clear();
-
-        public void RenderLine() =>
-            _coroutine ??= StartCoroutine(BuildLinePath());
-
-        private void Clear()
+        private void OnDisable()
         {
             _vertices.Clear();
-            StopCoroutine();
+            _refractors.Clear();
 
             if (_lineRenderer)
                 _lineRenderer.positionCount = 0;
         }
 
-        private IEnumerator BuildLinePath()
+        public void RenderLine()
         {
             _vertices.Clear();
-            _vertices.Add(new LaserVertex(Vector3.zero, _transform));
+            _vertices.Add(Vector3.zero);
 
             _refractors.Clear();
 
@@ -72,28 +61,24 @@ namespace Source.Components
                     continue;
 
                 Reflect(reflector, ref ray, hit);
-                Refract(refractor, ref ray, ref isStopped, hit);
-
-                yield return null;
+                Refract(refractor, ref ray, ref isStopped);
             }
 
             AddExtraVertex(isStopped, ray);
             RenderPath();
-
-            _coroutine = null;
         }
 
         private void SetRenderPoint(RaycastHit hit, ref Ray ray)
         {
             ray.origin = hit.point;
-            AddVertex(hit.point, hit.transform);
+            AddVertex(hit.point);
         }
 
-        private void AddVertex(Vector3 point, Transform connectedObject)
+        private void AddVertex(Vector3 point)
         {
             var localPoint = _transform.InverseTransformPoint(point);
 
-            _vertices.Add(new LaserVertex(localPoint, connectedObject));
+            _vertices.Add(localPoint);
         }
 
         private bool ShouldStop(int reflectionsCount, RaycastHit hit, out IReflector reflector,
@@ -118,7 +103,7 @@ namespace Source.Components
                 ray.direction = reflector.Reflect(ray.direction, hit);
         }
 
-        private void Refract(IRefractor refractor, ref Ray ray, ref bool isStopped, RaycastHit hit)
+        private void Refract(IRefractor refractor, ref Ray ray, ref bool isStopped)
         {
             if (refractor == null)
                 return;
@@ -131,7 +116,7 @@ namespace Source.Components
             }
 
             refractor.Refract(ref ray);
-            AddVertex(ray.origin, hit.transform);
+            AddVertex(ray.origin);
         }
 
         private void AddExtraVertex(bool isStopped, Ray ray)
@@ -139,8 +124,8 @@ namespace Source.Components
             if (isStopped)
                 return;
 
-            _vertices.Add(new LaserVertex(_transform.InverseTransformPoint
-                (ray.GetPoint(_lineLength))));
+            _vertices.Add(_transform.InverseTransformPoint
+                (ray.GetPoint(_lineLength)));
         }
 
         private void RenderPath()
@@ -148,16 +133,7 @@ namespace Source.Components
             _lineRenderer.positionCount = _vertices.Count;
 
             for (int i = 0; i < _vertices.Count; i++)
-                _lineRenderer.SetPosition(i, _vertices[i].Position);
-        }
-
-        private void StopCoroutine()
-        {
-            if (_coroutine == null)
-                return;
-
-            StopCoroutine(_coroutine);
-            _coroutine = null;
+                _lineRenderer.SetPosition(i, _vertices[i]);
         }
     }
 }
