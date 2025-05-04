@@ -23,7 +23,7 @@ namespace Source.Services
         }
 
         public void BuildNonAlloc(Vector3[] vertices, Ray ray, TransformData transform,
-            float lineLength, out int verticesLength, int maxReflectionsCount, int layerMask)
+            float lineLength, out int verticesLength, int maxRedirectionsCount, int layerMask)
         {
             _refractorsHashes.Clear();
 
@@ -39,7 +39,7 @@ namespace Source.Services
             {
                 SetRenderPoint(vertices, ++currentVertexIndex, transform, hit, ref ray);
 
-                isStopped = ShouldStop(++reflectionsCount, maxReflectionsCount,
+                isStopped = ShouldStop(++reflectionsCount, maxRedirectionsCount,
                     hit, out var reflector, out var refractor);
 
                 if (isStopped)

@@ -10,7 +10,7 @@ namespace Source.Components
     public class LaserRenderer : MonoBehaviour
     {
         [SerializeField, Min(0f)] private float _lineLength;
-        [SerializeField, Min(0)] private int _maxReflectionsCount;
+        [SerializeField, Min(0)] private int _maxRedirectionsCount;
 
         [SerializeField] private LineRenderer _lineRenderer;
         [SerializeField] private LayerMask _layerMask;
@@ -43,7 +43,7 @@ namespace Source.Components
             var ray = new Ray(_transform.position, _transform.forward);
 
             _pathBuilder.BuildNonAlloc(_vertices, ray, _transform.ToData(), _lineLength,
-                out int verticesLength, _maxReflectionsCount, _layerMask.value);
+                out int verticesLength, _maxRedirectionsCount, _layerMask.value);
 
             RenderPath(verticesLength);
         }

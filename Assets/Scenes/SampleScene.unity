@@ -150,7 +150,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _lineLength: 20
-  _maxReflectionsCount: 3
+  _maxRedirectionsCount: 3
   _lineRenderer: {fileID: 1632607517}
   _layerMask:
     serializedVersion: 2
