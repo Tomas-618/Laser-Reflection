@@ -7,6 +7,6 @@ namespace Source.Components
         [SerializeField] private LaserRenderer _laserRenderer;
 
         private void LateUpdate() =>
-            _laserRenderer.RenderLine();
+            _laserRenderer.Render();
     }
 }
