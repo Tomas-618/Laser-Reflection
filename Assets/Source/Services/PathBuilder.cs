@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
 using Source.Components.Contracts;
 using Source.Configs;
 using Source.Data;
@@ -13,7 +12,6 @@ namespace Source.Services
     {
         private readonly HashSet<IRefractor> _refractorsHashes;
 
-        [UsedImplicitly(ImplicitUseKindFlags.InstantiatedNoFixedConstructorSignature)]
         public PathBuilder(LaserConfig laserConfig)
         {
             if (laserConfig == null)
@@ -22,8 +20,8 @@ namespace Source.Services
             _refractorsHashes = new HashSet<IRefractor>(laserConfig.VerticesCapacity);
         }
 
-        public void BuildNonAlloc(Vector3[] vertices, Ray ray, TransformData transform,
-            float lineLength, out int verticesLength, int maxRedirectionsCount, int layerMask)
+        public void BuildNonAlloc(Vector3[] vertices, LaserData data,
+            out int verticesLength)
         {
             _refractorsHashes.Clear();
 
@@ -35,30 +33,30 @@ namespace Source.Services
             vertices[currentVertexIndex] = Vector3.zero;
 
             while (isStopped == false &&
-                   Physics.Raycast(ray, out var hit, lineLength, layerMask))
+                   Physics.Raycast(data.Ray, out var hit, data.Length, data.LayerMask))
             {
-                SetRenderPoint(vertices, ++currentVertexIndex, transform, hit, ref ray);
+                SetRenderPoint(vertices, ++currentVertexIndex, ref data, hit);
 
-                isStopped = ShouldStop(++reflectionsCount, maxRedirectionsCount,
+                isStopped = ShouldStop(++reflectionsCount, data.MaxRedirectionsCount,
                     hit, out var reflector, out var refractor);
 
                 if (isStopped)
                     continue;
 
-                Reflect(reflector, ref ray, hit);
-                Refract(vertices, ref currentVertexIndex, transform, refractor, ref ray, ref isStopped);
+                Reflect(reflector, ref data.Ray, hit);
+                Refract(vertices, ref currentVertexIndex, ref data, refractor, ref isStopped);
             }
 
-            AddExtraVertex(vertices, ref currentVertexIndex, transform, lineLength, isStopped, ray);
+            AddExtraVertex(vertices, ref currentVertexIndex, data, isStopped);
 
             verticesLength = currentVertexIndex + 1;
         }
 
-        private void SetRenderPoint(Vector3[] vertices, int currentIndex, TransformData transform,
-            RaycastHit hit, ref Ray ray)
+        private void SetRenderPoint(Vector3[] vertices, int currentIndex, ref LaserData data,
+            RaycastHit hit)
         {
-            ray.origin = hit.point;
-            AddVertex(vertices, currentIndex, transform, hit.point);
+            data.Ray.origin = hit.point;
+            AddVertex(vertices, currentIndex, data.Origin, hit.point);
         }
 
         private void AddVertex(Vector3[] vertices, int currentIndex, TransformData transform, Vector3 point)
@@ -90,8 +88,8 @@ namespace Source.Services
                 ray.direction = reflector.Reflect(ray.direction, hit);
         }
 
-        private void Refract(Vector3[] vertices, ref int currentIndex, TransformData transform,
-            IRefractor refractor, ref Ray ray, ref bool isStopped)
+        private void Refract(Vector3[] vertices, ref int currentIndex, ref LaserData data,
+            IRefractor refractor, ref bool isStopped)
         {
             if (refractor == null)
                 return;
@@ -103,18 +101,18 @@ namespace Source.Services
                 return;
             }
 
-            refractor.Refract(ref ray);
-            AddVertex(vertices, ++currentIndex, transform, ray.origin);
+            refractor.Refract(ref data.Ray);
+            AddVertex(vertices, ++currentIndex, data.Origin, data.Ray.origin);
         }
 
-        private void AddExtraVertex(Vector3[] vertices, ref int currentIndex, TransformData transform,
-            float lineLength, bool isStopped, Ray ray)
+        private void AddExtraVertex(Vector3[] vertices, ref int currentIndex,
+            LaserData data, bool isStopped)
         {
             if (isStopped)
                 return;
 
-            vertices[++currentIndex] = transform.InverseTransformPoint
-                (ray.GetPoint(lineLength));
+            vertices[++currentIndex] = data.Origin.InverseTransformPoint
+                (data.Ray.GetPoint(data.Length));
         }
     }
 }
