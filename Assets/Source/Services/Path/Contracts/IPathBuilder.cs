@@ -1,7 +1,7 @@
 using Source.Data;
 using UnityEngine;
 
-namespace Source.Services.Contracts
+namespace Source.Services.Path.Contracts
 {
     public interface IPathBuilder
     {

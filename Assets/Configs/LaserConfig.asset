@@ -12,4 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9693a1f286744ef6aac8e406bcdf6fca, type: 3}
   m_Name: LaserConfig
   m_EditorClassIdentifier: 
+  Length: 20
+  MaxRedirectionsCount: 3
   VerticesCapacity: 20
+  LayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295

@@ -6,8 +6,5 @@ namespace Source.Data
     {
         public Ray Ray;
         public TransformData Origin;
-        public float Length;
-        public int MaxRedirectionsCount;
-        public int LayerMask;
     }
 }

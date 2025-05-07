@@ -1,24 +1,32 @@
+using System;
 using Source.Configs;
 using Source.Data;
 using Source.Extensions;
-using Source.Services;
-using Source.Services.Contracts;
+using Source.Services.Factories.Contracts;
+using Source.Services.Path;
+using Source.Services.Path.Contracts;
 using UnityEngine;
+using VContainer;
 
 namespace Source.Components
 {
     public class LaserRenderer : MonoBehaviour
     {
-        [SerializeField, Min(0f)] private float _lineLength;
-        [SerializeField, Min(0)] private int _maxRedirectionsCount;
-
-        [SerializeField] private LaserConfig _laserConfig;
         [SerializeField] private LineRenderer _lineRenderer;
-        [SerializeField] private LayerMask _layerMask;
+        [SerializeField] private LaserConfig _laserConfig;
 
         private Vector3[] _vertices;
         private Transform _transform;
         private IPathBuilder _pathBuilder;
+
+        [Inject]
+        private void Construct(IPathBuilderFactory pathBuilderFactory)
+        {
+            if (pathBuilderFactory == null)
+                throw new ArgumentNullException(nameof(pathBuilderFactory));
+
+            _pathBuilder = pathBuilderFactory.GetOrCreate(_laserConfig);
+        }
 
         private void Awake()
         {
@@ -39,10 +47,7 @@ namespace Source.Components
             var laserData = new LaserData
             {
                 Ray = new Ray(_transform.position, _transform.forward),
-                Origin = _transform.ToData(),
-                Length = _lineLength,
-                MaxRedirectionsCount = _maxRedirectionsCount,
-                LayerMask = _layerMask.value
+                Origin = _transform.ToData()
             };
 
             _pathBuilder.BuildNonAlloc(_vertices, laserData, out int verticesLength);

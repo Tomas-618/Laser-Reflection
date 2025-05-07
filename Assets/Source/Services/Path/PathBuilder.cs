@@ -3,14 +3,17 @@ using System.Collections.Generic;
 using Source.Components.Contracts;
 using Source.Configs;
 using Source.Data;
-using Source.Services.Contracts;
+using Source.Services.Path.Contracts;
 using UnityEngine;
 
-namespace Source.Services
+namespace Source.Services.Path
 {
     public class PathBuilder : IPathBuilder
     {
         private readonly HashSet<IRefractor> _refractorsHashes;
+        private readonly float _length;
+        private readonly int _maxRedirectionsCount;
+        private readonly int _layerMask;
 
         public PathBuilder(LaserConfig laserConfig)
         {
@@ -18,6 +21,9 @@ namespace Source.Services
                 throw new ArgumentNullException(nameof(laserConfig));
 
             _refractorsHashes = new HashSet<IRefractor>(laserConfig.VerticesCapacity);
+            _length = laserConfig.Length;
+            _maxRedirectionsCount = laserConfig.MaxRedirectionsCount;
+            _layerMask = laserConfig.LayerMask.value;
         }
 
         public void BuildNonAlloc(Vector3[] vertices, LaserData data,
@@ -26,19 +32,19 @@ namespace Source.Services
             _refractorsHashes.Clear();
 
             int currentVertexIndex = 0;
-            int reflectionsCount = 0;
+            int redirectionsCount = 0;
 
             bool isStopped = false;
 
             vertices[currentVertexIndex] = Vector3.zero;
 
             while (isStopped == false &&
-                   Physics.Raycast(data.Ray, out var hit, data.Length, data.LayerMask))
+                   Physics.Raycast(data.Ray, out var hit, _length, _layerMask))
             {
                 SetRenderPoint(vertices, ++currentVertexIndex, ref data, hit);
 
-                isStopped = ShouldStop(++reflectionsCount, data.MaxRedirectionsCount,
-                    hit, out var reflector, out var refractor);
+                isStopped = ShouldStop(++redirectionsCount, hit, out var reflector,
+                    out var refractor);
 
                 if (isStopped)
                     continue;
@@ -66,13 +72,13 @@ namespace Source.Services
             vertices[currentIndex] = localPoint;
         }
 
-        private bool ShouldStop(int reflectionsCount, int maxVerticesCount, RaycastHit hit,
-            out IReflector reflector, out IRefractor refractor)
+        private bool ShouldStop(int redirectionsCount, RaycastHit hit, out IReflector reflector,
+            out IRefractor refractor)
         {
             reflector = null;
             refractor = null;
 
-            return reflectionsCount > maxVerticesCount ||
+            return redirectionsCount > _maxRedirectionsCount ||
                    CheckAnyComponent(hit.collider, out reflector, ref refractor) == false;
         }
 
@@ -112,7 +118,7 @@ namespace Source.Services
                 return;
 
             vertices[++currentIndex] = data.Origin.InverseTransformPoint
-                (data.Ray.GetPoint(data.Length));
+                (data.Ray.GetPoint(_length));
         }
     }
 }
