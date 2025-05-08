@@ -4,6 +4,7 @@ using Source.Components.Contracts;
 using Source.Configs;
 using Source.Data;
 using Source.Services.Path.Contracts;
+using Source.Utils;
 using UnityEngine;
 
 namespace Source.Services.Path
@@ -20,7 +21,9 @@ namespace Source.Services.Path
             if (laserConfig == null)
                 throw new ArgumentNullException(nameof(laserConfig));
 
-            _refractorsHashes = new HashSet<IRefractor>(laserConfig.VerticesCapacity);
+            _refractorsHashes = new HashSet<IRefractor>(LaserUtils
+                .CalculateVerticesCount(laserConfig.MaxRedirectionsCount));
+
             _length = laserConfig.Length;
             _maxRedirectionsCount = laserConfig.MaxRedirectionsCount;
             _layerMask = laserConfig.LayerMask.value;
@@ -31,6 +34,10 @@ namespace Source.Services.Path
         {
             _refractorsHashes.Clear();
 
+            var origin = data.Origin;
+
+            var ray = data.Ray;
+
             int currentVertexIndex = 0;
             int redirectionsCount = 0;
 
@@ -39,9 +46,9 @@ namespace Source.Services.Path
             vertices[currentVertexIndex] = Vector3.zero;
 
             while (isStopped == false &&
-                   Physics.Raycast(data.Ray, out var hit, _length, _layerMask))
+                   Physics.Raycast(ray, out var hit, _length, _layerMask))
             {
-                SetRenderPoint(vertices, ++currentVertexIndex, ref data, hit);
+                SetRenderPoint(vertices, ++currentVertexIndex, origin, ref ray, hit);
 
                 isStopped = ShouldStop(++redirectionsCount, hit, out var reflector,
                     out var refractor);
@@ -49,25 +56,26 @@ namespace Source.Services.Path
                 if (isStopped)
                     continue;
 
-                Reflect(reflector, ref data.Ray, hit);
-                Refract(vertices, ref currentVertexIndex, ref data, refractor, ref isStopped);
+                Reflect(reflector, ref ray, hit);
+                Refract(vertices, ref currentVertexIndex, ref ray, origin, refractor,
+                    ref isStopped);
             }
 
-            AddExtraVertex(vertices, ref currentVertexIndex, data, isStopped);
+            AddExtraVertex(vertices, ref currentVertexIndex, ray, origin, isStopped);
 
             verticesLength = currentVertexIndex + 1;
         }
 
-        private void SetRenderPoint(Vector3[] vertices, int currentIndex, ref LaserData data,
-            RaycastHit hit)
+        private void SetRenderPoint(Vector3[] vertices, int currentIndex, TransformData origin,
+            ref Ray ray, RaycastHit hit)
         {
-            data.Ray.origin = hit.point;
-            AddVertex(vertices, currentIndex, data.Origin, hit.point);
+            ray.origin = hit.point;
+            AddVertex(vertices, currentIndex, origin, hit.point);
         }
 
-        private void AddVertex(Vector3[] vertices, int currentIndex, TransformData transform, Vector3 point)
+        private void AddVertex(Vector3[] vertices, int currentIndex, TransformData origin, Vector3 point)
         {
-            var localPoint = transform.InverseTransformPoint(point);
+            var localPoint = origin.InverseTransformPoint(point);
 
             vertices[currentIndex] = localPoint;
         }
@@ -94,8 +102,8 @@ namespace Source.Services.Path
                 ray.direction = reflector.Reflect(ray.direction, hit);
         }
 
-        private void Refract(Vector3[] vertices, ref int currentIndex, ref LaserData data,
-            IRefractor refractor, ref bool isStopped)
+        private void Refract(Vector3[] vertices, ref int currentIndex, ref Ray ray,
+            TransformData origin, IRefractor refractor, ref bool isStopped)
         {
             if (refractor == null)
                 return;
@@ -107,18 +115,18 @@ namespace Source.Services.Path
                 return;
             }
 
-            refractor.Refract(ref data.Ray);
-            AddVertex(vertices, ++currentIndex, data.Origin, data.Ray.origin);
+            refractor.Refract(ref ray);
+            AddVertex(vertices, ++currentIndex, origin, ray.origin);
         }
 
         private void AddExtraVertex(Vector3[] vertices, ref int currentIndex,
-            LaserData data, bool isStopped)
+            Ray ray, TransformData origin, bool isStopped)
         {
             if (isStopped)
                 return;
 
-            vertices[++currentIndex] = data.Origin.InverseTransformPoint
-                (data.Ray.GetPoint(_length));
+            vertices[++currentIndex] = origin.InverseTransformPoint
+                (ray.GetPoint(_length));
         }
     }
 }

@@ -7,7 +7,6 @@ namespace Source.Configs
     {
         public float Length;
         public int MaxRedirectionsCount;
-        public int VerticesCapacity;
         public LayerMask LayerMask;
     }
 }

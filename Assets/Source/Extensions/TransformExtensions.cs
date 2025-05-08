@@ -5,14 +5,7 @@ namespace Source.Extensions
 {
     public static class TransformExtensions
     {
-        public static TransformData ToData(this Transform transform)
-        {
-            return new TransformData
-            {
-                Position = transform.position,
-                Rotation = transform.rotation,
-                Scale = transform.lossyScale
-            };
-        }
+        public static TransformData ToData(this Transform transform) =>
+            new(transform.position, transform.lossyScale, transform.rotation);
     }
 }

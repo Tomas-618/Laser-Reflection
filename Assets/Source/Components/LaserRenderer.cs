@@ -3,8 +3,8 @@ using Source.Configs;
 using Source.Data;
 using Source.Extensions;
 using Source.Services.Factories.Contracts;
-using Source.Services.Path;
 using Source.Services.Path.Contracts;
+using Source.Utils;
 using UnityEngine;
 using VContainer;
 
@@ -26,12 +26,8 @@ namespace Source.Components
                 throw new ArgumentNullException(nameof(pathBuilderFactory));
 
             _pathBuilder = pathBuilderFactory.GetOrCreate(_laserConfig);
-        }
-
-        private void Awake()
-        {
-            _pathBuilder = new PathBuilder(_laserConfig);
-            _vertices = new Vector3[_laserConfig.VerticesCapacity];
+            _vertices = new Vector3[LaserUtils.CalculateVerticesCount
+                (_laserConfig.MaxRedirectionsCount)];
 
             _transform = transform;
         }
@@ -44,11 +40,8 @@ namespace Source.Components
 
         public void Render()
         {
-            var laserData = new LaserData
-            {
-                Ray = new Ray(_transform.position, _transform.forward),
-                Origin = _transform.ToData()
-            };
+            var laserData = new LaserData(_transform.ToData(),
+                new Ray(_transform.position, _transform.forward));
 
             _pathBuilder.BuildNonAlloc(_vertices, laserData, out int verticesLength);
 

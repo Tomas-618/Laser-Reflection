@@ -2,9 +2,15 @@ using UnityEngine;
 
 namespace Source.Data
 {
-    public struct LaserData
+    public readonly ref struct LaserData
     {
-        public Ray Ray;
-        public TransformData Origin;
+        public readonly TransformData Origin;
+        public readonly Ray Ray;
+
+        public LaserData(TransformData origin, Ray ray)
+        {
+            Origin = origin;
+            Ray = ray;
+        }
     }
 }

@@ -2,22 +2,29 @@ using UnityEngine;
 
 namespace Source.Data
 {
-    public struct TransformData
+    public readonly ref struct TransformData
     {
-        public Vector3 Position;
-        public Quaternion Rotation;
-        public Vector3 Scale;
+        private readonly Vector3 _position;
+        private readonly Vector3 _scale;
+        private readonly Quaternion _rotation;
 
-        public readonly Vector3 InverseTransformPoint(Vector3 point)
+        public TransformData(Vector3 position, Vector3 scale, Quaternion rotation)
         {
-            var localPoint = point - Position;
+            _position = position;
+            _scale = scale;
+            _rotation = rotation;
+        }
 
-            localPoint = Quaternion.Inverse(Rotation) * localPoint;
+        public Vector3 InverseTransformPoint(Vector3 point)
+        {
+            var localPoint = point - _position;
+
+            localPoint = Quaternion.Inverse(_rotation) * localPoint;
 
             localPoint = new Vector3(
-                localPoint.x / Scale.x,
-                localPoint.y / Scale.y,
-                localPoint.z / Scale.z
+                localPoint.x / _scale.x,
+                localPoint.y / _scale.y,
+                localPoint.z / _scale.z
             );
 
             return localPoint;
