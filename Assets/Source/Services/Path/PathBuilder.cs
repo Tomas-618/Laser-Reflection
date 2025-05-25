@@ -12,6 +12,7 @@ namespace Source.Services.Path
     public class PathBuilder : IPathBuilder
     {
         private readonly HashSet<IRefractor> _refractorsHashes;
+        private readonly RaycastHit[] _hits;
         private readonly float _length;
         private readonly int _maxRedirectionsCount;
         private readonly int _layerMask;
@@ -23,6 +24,7 @@ namespace Source.Services.Path
 
             _refractorsHashes = new HashSet<IRefractor>(LaserUtils
                 .CalculateVerticesCount(laserConfig.MaxRedirectionsCount));
+            _hits = new RaycastHit[1];
 
             _length = laserConfig.Length;
             _maxRedirectionsCount = laserConfig.MaxRedirectionsCount;
@@ -46,8 +48,10 @@ namespace Source.Services.Path
             vertices[currentVertexIndex] = Vector3.zero;
 
             while (isStopped == false &&
-                   Physics.Raycast(ray, out var hit, _length, _layerMask))
+                   Physics.RaycastNonAlloc(ray, _hits, _length, _layerMask) > 0)
             {
+                var hit = _hits[0];
+
                 SetRenderPoint(vertices, ++currentVertexIndex, origin, ref ray, hit);
 
                 isStopped = ShouldStop(++redirectionsCount, hit, out var reflector,
